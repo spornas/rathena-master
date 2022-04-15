@@ -308,7 +308,7 @@ int char_mmo_char_tosql(uint32 char_id, struct mmo_charstatus* p){
 	{	//Save status
 		if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `base_level`='%d', `job_level`='%d',"
 			//"`base_exp`='%" PRIu64 "', `job_exp`='%" PRIu64 "', `zeny`='%d',"
-			"`base_exp`='%" PRIu64 "', `job_exp`='%'," // All char with same Zeny [HD Scripts]
+			"`base_exp`='%" PRIu64 "',`job_exp`='%" PRIu64 "'," // All char with same Zeny [HD Scripts]
 			"`max_hp`='%u',`hp`='%u',`max_sp`='%u',`sp`='%u',`status_point`='%d',`skill_point`='%d',"
 			"`str`='%d',`agi`='%d',`vit`='%d',`int`='%d',`dex`='%d',`luk`='%d',"
 			"`option`='%d',`party_id`='%d',`guild_id`='%d',`pet_id`='%d',`homun_id`='%d',`elemental_id`='%d',"
