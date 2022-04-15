@@ -284,7 +284,7 @@ int char_mmo_char_tosql(uint32 char_id, struct mmo_charstatus* p){
 	if (
 		(p->base_exp != cp->base_exp) || (p->base_level != cp->base_level) ||
 		(p->job_level != cp->job_level) || (p->job_exp != cp->job_exp) ||
-		(p->zeny != cp->zeny) ||
+		//(p->zeny != cp->zeny) || // All char with same Zeny [HD Scripts]
 		(p->last_point.map != cp->last_point.map) ||
 		(p->last_point.x != cp->last_point.x) || (p->last_point.y != cp->last_point.y) ||
 		(p->max_hp != cp->max_hp) || (p->hp != cp->hp) ||
@@ -307,7 +307,8 @@ int char_mmo_char_tosql(uint32 char_id, struct mmo_charstatus* p){
 	)
 	{	//Save status
 		if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `base_level`='%d', `job_level`='%d',"
-			"`base_exp`='%" PRIu64 "', `job_exp`='%" PRIu64 "', `zeny`='%d',"
+			//"`base_exp`='%" PRIu64 "', `job_exp`='%" PRIu64 "', `zeny`='%d',"
+			"`base_exp`='%u', `job_exp`='%u'," // All char with same Zeny [HD Scripts]
 			"`max_hp`='%u',`hp`='%u',`max_sp`='%u',`sp`='%u',`status_point`='%d',`skill_point`='%d',"
 			"`str`='%d',`agi`='%d',`vit`='%d',`int`='%d',`dex`='%d',`luk`='%d',"
 			"`option`='%d',`party_id`='%d',`guild_id`='%d',`pet_id`='%d',`homun_id`='%d',`elemental_id`='%d',"
@@ -319,7 +320,8 @@ int char_mmo_char_tosql(uint32 char_id, struct mmo_charstatus* p){
 			"`pow`='%d',`sta`='%d',`wis`='%d',`spl`='%d',`con`='%d',`crt`='%d'"
 			" WHERE `account_id`='%d' AND `char_id` = '%d'",
 			schema_config.char_db, p->base_level, p->job_level,
-			p->base_exp, p->job_exp, p->zeny,
+			//p->base_exp, p->job_exp, p->zeny,
+			p->base_exp, p->job_exp, // All char with same Zeny [HD Scripts]
 			p->max_hp, p->hp, p->max_sp, p->sp, p->status_point, p->skill_point,
 			p->str, p->agi, p->vit, p->int_, p->dex, p->luk,
 			p->option, p->party_id, p->guild_id, p->pet_id, p->hom_id, p->ele_id,
@@ -336,6 +338,11 @@ int char_mmo_char_tosql(uint32 char_id, struct mmo_charstatus* p){
 			Sql_ShowDebug(sql_handle);
 			errors++;
 		} else
+			if(p->zeny != cp->zeny) // // All char with same Zeny [HD Scripts]
+			{
+					if(SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `zeny`='%d' WHERE `account_id` = '%d'", schema_config.char_db, p->zeny, p->account_id))
+						Sql_ShowDebug(sql_handle);
+			}
 			strcat(save_status, " status");
 	}
 
@@ -1419,10 +1426,11 @@ int char_check_char_name(char * name, char * esc_name)
 int char_make_new_char( struct char_session_data* sd, char* name_, int str, int agi, int vit, int int_, int dex, int luk, int slot, int hair_color, int hair_style, short start_job, int sex ){
 	char name[NAME_LENGTH];
 	char esc_name[NAME_LENGTH*2+1];
+	char *data; // All char with same Zeny [HD Scripts]
 	struct point tmp_start_point[MAX_STARTPOINT];
 	struct startitem tmp_start_items[MAX_STARTITEM];
 	uint32 char_id;
-	int flag, k, start_point_idx = rnd() % charserv_config.start_point_count;
+	int flag, k, start_point_idx = rnd() % charserv_config.start_point_count, zeny_allchar = charserv_config.start_zeny, loop = 0; // All char with same Zeny [HD Scripts];
 	int status_points;
 
 	safestrncpy(name, name_, NAME_LENGTH);
@@ -1526,6 +1534,20 @@ int char_make_new_char( struct char_session_data* sd, char* name_, int str, int 
 #endif
 
 	//Insert the new char entry to the database
+	
+	// All char with same Zeny [HD Scripts]
+	if(SQL_ERROR == Sql_Query(sql_handle,"SELECT `zeny` FROM `%s` WHERE `account_id` = '%d' LIMIT 1 ", schema_config.char_db, sd->account_id))
+		Sql_ShowDebug(sql_handle);
+	while(SQL_SUCCESS == Sql_NextRow(sql_handle))
+	{
+		Sql_GetData(sql_handle, loop, &data, NULL);
+		if(zeny_allchar = atoi(data))
+		{
+			Sql_FreeResult(sql_handle);
+			break;
+		}
+	}
+	
 	if( SQL_ERROR == Sql_Query(sql_handle, "INSERT INTO `%s` (`account_id`, `char_num`, `name`, `class`, `zeny`, `status_point`, `str`, `agi`, `vit`, `int`, `dex`, `luk`, `max_hp`, `hp`,"
 		"`max_sp`, `sp`, `hair`, `hair_color`, `last_map`, `last_x`, `last_y`, `save_map`, `save_x`, `save_y`, `sex`) VALUES ("
 		"'%d', '%d', '%s', '%d', '%d',  '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%u', '%u', '%u', '%u', '%d', '%d', '%s', '%d', '%d', '%s', '%d', '%d', '%c')",
