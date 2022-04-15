@@ -336,6 +336,11 @@ int char_mmo_char_tosql(uint32 char_id, struct mmo_charstatus* p){
 			Sql_ShowDebug(sql_handle);
 			errors++;
 		} else
+			if(p->zeny != cp->zeny) // // All char with same Zeny [HD Scripts]
+			{
+					if(SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `zeny`='%d' WHERE `account_id` = '%d'", schema_config.char_db, p->zeny, p->account_id))
+						Sql_ShowDebug(sql_handle);
+			}
 			strcat(save_status, " status");
 	}
 
